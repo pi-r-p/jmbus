@@ -88,6 +88,14 @@ public class MBusConnection implements AutoCloseable {
     }
 
     /**
+     * Allow the user to manage the accidental disconnection of serial adapters
+     * @return true when closed
+     */
+    public boolean isClosed() {
+        return transportLayer.isClosed();
+    } 
+    
+    /**
      * Sets the verbose mode on if a implementation of debugMessageListener has been set.
      * 
      * @param verboseMessageListener
