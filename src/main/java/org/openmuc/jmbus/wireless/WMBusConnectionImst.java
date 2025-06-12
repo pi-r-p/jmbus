@@ -294,7 +294,7 @@ class WMBusConnectionImst extends AbstractWMBusConnection {
             DataInputStream is = transportLayer.getInputStream();
             byte b0, b1;
 
-            transportLayer.setTimeout(0);
+            transportLayer.setTimeout(MESSAGE_FRAGEMENT_TIMEOUT);
             b0 = is.readByte();
             if (b0 != Const.START_OF_FRAME) {
                 String msg = String.format("First byte does not start with %02X.", Const.START_OF_FRAME);

@@ -63,7 +63,7 @@ class WMBusConnectionAmber extends AbstractWMBusConnection {
             DataInputStream is = getInputStream();
             while (true) {
                 try {
-                    this.transportLayer.setTimeout(0);
+                    this.transportLayer.setTimeout(MESSAGE_FRAGEMENT_TIMEOUT);
                     b0 = is.read();
                     this.transportLayer.setTimeout(MESSAGE_FRAGEMENT_TIMEOUT);
                     b1 = is.read();
