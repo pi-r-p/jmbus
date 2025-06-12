@@ -6,5 +6,7 @@ This is a fork of [kaikreuzer fork](https://github.com/kaikreuzer/jmbus).
 
 - It fixes the endless read on wired mbus by enforcing the timeout in underlying rxtx lib.
 - It allows to use serial by path linux feature as serial port name (aka /dev/serial/by-path/xxx), by decoding the symlink when possible.
+- It manages read timeout correctly, you can safely unplug devices while receiving data...
+
 
 
