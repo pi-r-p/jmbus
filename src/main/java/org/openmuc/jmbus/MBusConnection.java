@@ -398,6 +398,9 @@ public class MBusConnection implements AutoCloseable {
     }
 
     private void sendShortMessage(int slaveAddr, int cmd) throws IOException {
+        // a short circuit on the bus may produce some random bytes. better flush input before initiate a transmission.
+        is.skipBytes(is.available());
+        
         synchronized (os) {
             outputBuffer[0] = 0x10;
             outputBuffer[1] = (byte) (cmd);
@@ -412,6 +415,9 @@ public class MBusConnection implements AutoCloseable {
     }
 
     void sendLongMessage(int slaveAddr, int controlField, int ci, int length, byte[] data) throws IOException {
+        // a short circuit on the bus may produce some random bytes. better flush input before initiate a transmission.
+        is.skipBytes(is.available());
+        
         synchronized (os) {
             outputBuffer[0] = 0x68;
             outputBuffer[1] = (byte) (length + 3);
