@@ -8,6 +8,9 @@ package org.openmuc.jmbus.transportlayer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import gnu.io.CommPortIdentifier;
 import gnu.io.NoSuchPortException;
@@ -31,10 +34,26 @@ class SerialLayer implements TransportLayer {
         this.serialBuilder = serialInfo;
 	}
 
+
+  // silently decode the symbolic link, when possible
+  // this allows to use serial by path linux feature (/dev/serial/by-path/xxx)
+  private String decodeSymbolicLink(String path) {
+    Path p = Paths.get(path);
+    if (Files.isSymbolicLink(p)) {
+      try {
+        System.out.println(p.toRealPath().toString());
+        return p.toRealPath().toString();
+      } catch (IOException e) {
+        return path;
+      }
+    }
+    return path;
+  }
+  
 	@Override
     public void open() throws IOException {
       try {
-        portIdentifier = CommPortIdentifier.getPortIdentifier(serialBuilder.getSerialPortName());
+        portIdentifier = CommPortIdentifier.getPortIdentifier(decodeSymbolicLink(serialBuilder.getSerialPortName()));
         serialPort = portIdentifier.open("jMBus", timeout);
         serialPort.setSerialPortParams(serialBuilder.getBaudrate(), serialBuilder.getDataBits(), serialBuilder.getStopBits(),
             serialBuilder.getParity());
