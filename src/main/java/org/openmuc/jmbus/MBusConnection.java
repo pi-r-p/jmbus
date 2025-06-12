@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.locks.LockSupport;
 
 import org.openmuc.jmbus.MBusMessage.MessageType;
 import org.openmuc.jmbus.VerboseMessage.MessageDirection;
@@ -445,13 +446,45 @@ public class MBusConnection implements AutoCloseable {
     MBusMessage receiveMessage() throws IOException {
         byte[] receivedBytes;
 
-        int b0 = is.read();
+        long t, tStart;
+
+        int available = 0;
+        tStart = System.currentTimeMillis();
+        do {
+            t = System.currentTimeMillis();
+            available = is.available();
+            if (available < 1) {
+                LockSupport.parkNanos(100000000);
+            }
+        } while (available < 1 && t < (tStart + transportLayer.getTimeout()));
+        int b0;
+        if (available >= 1) {
+            b0 = is.read();
+        } else {
+            is.skipBytes(available);
+            throw new IOException(String.format("Timeout while waiting for %d bytes, received %d", 1, available));
+        }
+
         if (b0 == 0xe5) {
             // messageLength = 1;
             receivedBytes = new byte[] { (byte) b0 };
         }
         else if ((b0 & 0xff) == 0x68) {
-            int b1 = is.readByte() & 0xff;
+            tStart = System.currentTimeMillis();
+            do {
+                t = System.currentTimeMillis();
+                available = is.available();
+                if (available < 1) {
+                    LockSupport.parkNanos(100000000);
+                }
+            } while (available < 1 && t < (tStart + transportLayer.getTimeout()));
+            int b1;
+            if (available >= 1) {
+                b1 = is.readByte() & 0xff;
+            } else {
+                is.skipBytes(available);
+                throw new IOException(String.format("Timeout while waiting for %d bytes, received %d", 1, available));
+            }
 
             /**
              * The L field gives the quantity of the user data inputs plus 3 (for C,A,CI).
@@ -464,7 +497,21 @@ public class MBusConnection implements AutoCloseable {
 
             int lenRead = messageLength - 2;
 
-            is.readFully(receivedBytes, 2, lenRead);
+            tStart = System.currentTimeMillis();
+            do {
+                t = System.currentTimeMillis();
+                available = is.available();
+                if (available < lenRead) {
+                    LockSupport.parkNanos(100000000);
+                }
+            } while (available < lenRead && t < (tStart + transportLayer.getTimeout()));
+            if (available >= lenRead) {
+                is.readFully(receivedBytes, 2, lenRead);
+            } else {
+                is.skipBytes(available);
+                throw new IOException(String.format("Timeout while waiting for %d bytes, received %d", lenRead, available));
+            }
+            
         }
         else {
             throw new IOException(String.format("Received unknown message: %02X", b0));
